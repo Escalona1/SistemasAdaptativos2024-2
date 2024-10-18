@@ -143,6 +143,7 @@ int main(int argc, char *argv[])
     }
     ifstream myfile(str_file);
     tuple<string, string, int, float> best = greedy_ffmsp(&myfile, th, random_prob);
+    tie(initial_s, s, changes, quality) = best;
     seconds duration;
     auto start = high_resolution_clock::now();
 
