@@ -6,12 +6,12 @@
 #include <algorithm>
 #include <chrono>
 #include <tuple>
-#include <random>  // Biblioteca para números aleatorios
+#include <random>
 
 using namespace std;
 using namespace std::chrono;
 
-int hammingDist(string str1, string str2) 
+int hammingDist(string str1, string str2)   
 { 
     int i = 0, count = 0; 
     while (str1[i] != '\0') { 
@@ -23,6 +23,8 @@ int hammingDist(string str1, string str2)
 } 
 
 tuple<string, string, int, float> greedy_ffmsp(ifstream* file, float t, float random_prob) {
+    file->clear();
+    file->seekg(0, ios::beg);
     vector<char> sigma = {'A', 'C', 'G', 'T'};
     vector<int> diffs;
     string s, initial_s;
@@ -104,37 +106,75 @@ tuple<string, string, int, float> greedy_ffmsp(ifstream* file, float t, float ra
     for(int i = 0; i < diffs.size(); i++) {
         if(diffs[i] >= th) quality++;
     }
-    quality = (quality/n) * 100;
+    quality = (quality/(float)n) * 100.0;
     return make_tuple(initial_s, s, changes, quality);
 }
 
 int main(int argc, char *argv[])
 {
+    vector<string> arguments;
     if(argc < 5){
         cout << "faltan argumentos" << endl;
         return -1;
     }
+    for(int i=1;i<argc;i++){
+        arguments.push_back(argv[i]);
+    }
     string initial_s, s;
     int changes;
-    float quality;
+    float quality, quality_2;
+    bool tunning = false;
     string i_arg = argv[1];
     string str_file = argv[2];
-    string th_arg = argv[3];
-    float th = stof(argv[4]);
-    float random_prob = 0.2;  // Probabilidad de seleccionar un carácter aleatorio (20%)
+    string ltime_arg = argv[3];
+    float ltime = stof(argv[4]);
+    float th = 0.75;
+    if(argc >= 6){
+        find(arguments.begin(), arguments.end(), "-tunning") == end(arguments) ? : tunning = true;
+        auto th_arg = find(arguments.begin(), arguments.end(), "-th");
+        if(th_arg != end(arguments)){
+            th = stof(*(th_arg+1));
+        }   
+    }
+    float random_prob = 0.15;  // Probabilidad de seleccionar un carácter aleatorio (20%)
     ifstream myfile(str_file);
-
+    tuple<string, string, int, float> best = greedy_ffmsp(&myfile, th, random_prob);
+    seconds duration;
     auto start = high_resolution_clock::now();
-    tie(initial_s, s, changes, quality) = greedy_ffmsp(&myfile, th, random_prob);
-    auto stop = high_resolution_clock::now();
 
-    auto duration = duration_cast<microseconds>(stop - start);
+    do{
+        auto x = greedy_ffmsp(&myfile, th, random_prob);
+        //cout << get<3>(x) << " " << get<3>(best) << endl; 
+        if(get<3>(x) > get<3>(best)){
+            auto stop_2 = high_resolution_clock::now();
+            auto duration_2 = duration_cast<milliseconds>(stop_2 - start);
+            best = x;
+            tie(initial_s, s, changes, quality) = best;
+            if(!tunning){
+                cout << "new best quality: " << to_string(quality) << "% at " << duration_2.count() << " ms" << endl;
+            }
+        }
+        auto stop = high_resolution_clock::now();
 
-    cout << "start: " << initial_s << endl;
-    cout << "ended: " << s << endl;
-    cout << "Time taken by function: " << duration.count() << " microseconds" << endl;
-    cout << "total letters changed: " << changes << endl;
-    cout << "cardinality of Ps: " << quality << "%" << endl;
+        duration = duration_cast<seconds>(stop - start);
+    }while(duration.count() < ltime);
+
+    //cout << "start: " << initial_s << endl;
+    if(!tunning){
+        cout << "best sequence: " << s << endl;
+    }else{
+        cout << to_string(quality) << endl;
+    }
+    //cout << "Time taken by function: " << duration.count() << " microseconds" << endl;
+    //cout << "total letters changed: " << changes << endl;
+    //cout <<"quality: " << to_string(quality) << "%" << endl;
     myfile.close();
     return 0;
 }
+
+/*
+    TODO
+    parametros -i instace -t tiempo -alt aletoriedad -tunning -th threshold
+    imprimir calidad y tiempo cada vez que encuentra uno mejor
+    Al final imprimir mejor solucion
+*/
