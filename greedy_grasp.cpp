@@ -129,14 +129,18 @@ int main(int argc, char *argv[])
     string ltime_arg = argv[3];
     float ltime = stof(argv[4]);
     float th = 0.75;
+    float random_prob = 0.15;  // Probabilidad de seleccionar un carácter aleatorio (20%)
     if(argc >= 6){
         find(arguments.begin(), arguments.end(), "-tunning") == end(arguments) ? : tunning = true;
         auto th_arg = find(arguments.begin(), arguments.end(), "-th");
         if(th_arg != end(arguments)){
             th = stof(*(th_arg+1));
-        }   
+        }  
+        auto rnd_arg = find(arguments.begin(), arguments.end(), "-rnd");
+        if(rnd_arg != end(arguments)){
+            random_prob = stof(*(rnd_arg+1));
+        } 
     }
-    float random_prob = 0.15;  // Probabilidad de seleccionar un carácter aleatorio (20%)
     ifstream myfile(str_file);
     tuple<string, string, int, float> best = greedy_ffmsp(&myfile, th, random_prob);
     seconds duration;
@@ -173,8 +177,11 @@ int main(int argc, char *argv[])
 }
 
 /*
-    TODO
-    parametros -i instace -t tiempo -alt aletoriedad -tunning -th threshold
-    imprimir calidad y tiempo cada vez que encuentra uno mejor
-    Al final imprimir mejor solucion
+    comando:
+    ./greedy_grasp -i instance -t tiempo
+
+    argumentos opcionales:
+    -rnd randomness (0.0 - 1.0)
+    -tunning 
+    -th threshold (0.75 - 0.9)
 */
